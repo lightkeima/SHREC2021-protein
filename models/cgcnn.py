@@ -16,8 +16,8 @@ class CGCNN(torch.nn.Module):
     self.num_classes = args.num_classes
     hidden_channels = 128
     self.node_encoder = Linear(4, hidden_channels)
-    self.edge_encoder = Linear(3, hidden_channels)
-    num_layers = 28
+    #self.edge_encoder = Linear(3, hidden_channels)
+    num_layers = 12
     self.layers = torch.nn.ModuleList()
     for i in range(1, num_layers + 1):
       conv = GENConv(hidden_channels, hidden_channels, aggr='softmax',
@@ -32,13 +32,13 @@ class CGCNN(torch.nn.Module):
     self.lin = Linear(hidden_channels, args.num_classes)
      
   def forward(self, data):
-    x, edge_index, edge_attr, batch = data.x, data.edge_attr, data.edge_index, data.batch
-    edge_attr = self.edge_encoder(edge_attr)
-
-    x = self.layers[0].conv(x, edge_index, edge_attr)
+    x, edge_index, edge_attr, batch = data.x, data.edge_index, data.edge_attr, data.batch
+    #edge_attr = self.edge_encoder(edge_attr)
+    x = self.node_encoder(x)
+    x = self.layers[0].conv(x, edge_index, None)
 
     for layer in self.layers[1:]:
-      x = layer(x, edge_index, edge_attr)
+      x = layer(x, edge_index, None)
 
       x = self.layers[0].act(self.layers[0].norm(x))
       x = F.dropout(x, p=0.1, training=self.training)
