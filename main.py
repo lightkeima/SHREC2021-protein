@@ -60,7 +60,7 @@ def main():
                         help='convert the faces to edge index')                       
     parser.add_argument('--angle-and-distance', action="store_true", 
                         help='create angle and distance features for edges')
-    parser.add_argument('--line-graph', actioin="store_true",
+    parser.add_argument('--line-graph', action="store_true",
                         help='create line graph from original')
     parser.add_argument('--model', default="gnn",
                         help='main model')
