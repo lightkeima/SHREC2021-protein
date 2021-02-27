@@ -43,4 +43,4 @@ class CGCNN(torch.nn.Module):
       x = self.layers[0].act(self.layers[0].norm(x))
       x = F.dropout(x, p=0.1, training=self.training)
 
-      return self.lin(x)
+    return self.lin(x)
