@@ -1,10 +1,13 @@
 import torch
-from torch.nn import Linear
-from torch_geometric.nn import TopKPooling
-from torch_geometric.nn import global_mean_pool as gap, global_max_pool as gmp
-from torch_geometric.nn import GENConv
-import torch.nn.functional as F
 
+import torch
+from tqdm import tqdm
+import torch.nn.functional as F
+from torch.nn import Linear, LayerNorm, ReLU
+from torch_scatter import scatter
+
+from torch_geometric.nn import GENConv, DeepGCNLayer
+from torch_geometric.data import RandomNodeSampler
 class CGCNN(torch.nn.Module):
   def __init__(self, args):
     super(CGCNN, self).__init__()
@@ -12,9 +15,9 @@ class CGCNN(torch.nn.Module):
     self.num_features = args.num_features  
     self.num_classes = args.num_classes
     hidden_channels = 128
-    self.node_encoder = Linear(data.x.size(-1), hidden_channels)
-    self.edge_encoder = Linear(data.edge_attr.size(-1), hidden_channels)
-
+    self.node_encoder = Linear(4, hidden_channels)
+    self.edge_encoder = Linear(3, hidden_channels)
+    num_layers = 28
     self.layers = torch.nn.ModuleList()
     for i in range(1, num_layers + 1):
       conv = GENConv(hidden_channels, hidden_channels, aggr='softmax',
@@ -29,6 +32,7 @@ class CGCNN(torch.nn.Module):
     self.lin = Linear(hidden_channels, args.num_classes)
      
   def forward(self, data):
+    x, edge_index, edge_attr, batch = data.x, data.edge_attr, data.edge_index, data.batch
     edge_attr = self.edge_encoder(edge_attr)
 
     x = self.layers[0].conv(x, edge_index, edge_attr)
