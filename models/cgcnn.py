@@ -11,33 +11,32 @@ class CGCNN(torch.nn.Module):
     self.args = args
     self.num_features = args.num_features  
     self.num_classes = args.num_classes
+    hidden_channels = 128
+    self.node_encoder = Linear(data.x.size(-1), hidden_channels)
+    self.edge_encoder = Linear(data.edge_attr.size(-1), hidden_channels)
 
-    self.dim_edge_attr = 4
-    self.conv1 = GENConv(4, 128)
-    self.pool1 = TopKPooling(128, ratio=0.8)
-    self.conv2 = GENConv(128,128)
-    self.pool2 = TopKPooling(128,ratio=0.8)
-    self.lin1 = Linear(256, 128)
-    self.lin2 = Linear(128, self.num_classes)
+    self.layers = torch.nn.ModuleList()
+    for i in range(1, num_layers + 1):
+      conv = GENConv(hidden_channels, hidden_channels, aggr='softmax',
+                           t=1.0, learn_t=True, num_layers=2, norm='layer')
+      norm = LayerNorm(hidden_channels, elementwise_affine=True)
+      act = ReLU(inplace=True)
+
+      layer = DeepGCNLayer(conv, norm, act, block='res+', dropout=0.1,
+                                 ckpt_grad=i % 3)
+      self.layers.append(layer)
+
+    self.lin = Linear(hidden_channels, args.num_classes)
      
   def forward(self, data):
-    x, edge_index, edge_attr, batch = data.x, data.edge_index, data.edge_attr, data.batch
-    #print(x)
-    x = torch.cat([x, torch.zeros(x.size(0),1,device="cuda:0")], dim=1)
-    x = self.conv1(x, edge_index, edge_attr)
-    x = x.relu()
-    x, edge_index, edge_attr, batch, _, _ = self.pool1(x, edge_index, edge_attr, batch)
-    x1 = torch.cat([gmp(x, batch), gap(x, batch)], dim=1)
-    x = self.conv2(x, edge_index, None)
-    x = x.relu()
-    x, edge_index, _, batch, _, _ = self.pool2(x, edge_index, None, batch)
-    x2 = torch.cat([gmp(x, batch), gap(x, batch)], dim=1)
-    
-    x = x1 + x2
-    
-    x = self.lin1(x)
-    x = x.relu()  
-    x = self.lin2(x)
-    #x = F.log_softmax(self.lin2(x), dim=-1)
+    edge_attr = self.edge_encoder(edge_attr)
 
-    return x
+    x = self.layers[0].conv(x, edge_index, edge_attr)
+
+    for layer in self.layers[1:]:
+      x = layer(x, edge_index, edge_attr)
+
+      x = self.layers[0].act(self.layers[0].norm(x))
+      x = F.dropout(x, p=0.1, training=self.training)
+
+      return self.lin(x)
