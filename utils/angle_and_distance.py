@@ -28,7 +28,6 @@ class AngleDistanceAttribute(object):
     Ox = torch.tensor([[1.0],[0.0],[0.0]])
     Oy = torch.tensor([[0.0],[1.0],[0.0]])
     Oz = torch.tensor([[0.0],[0.0],[1.0]])
-    print("ok",data.x)
     vectors = (data.x[edge_index[0]]-data.x[edge_index[1]])
 
     x_dot = torch.mm(vectors, Ox)
