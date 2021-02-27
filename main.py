@@ -60,6 +60,8 @@ def main():
                         help='convert the faces to edge index')                       
     parser.add_argument('--angle-and-distance', action="store_true", 
                         help='create angle and distance features for edges')
+    parser.add_argument('--line-graph', actioin="store_true",
+                        help='create line graph from original')
     parser.add_argument('--model', default="gnn",
                         help='main model')
     parser.add_argument('--layer', default="gnn",
@@ -72,7 +74,7 @@ def main():
                         help="Number of points to sample when convert from meshes to points cloud")
     parser.add_argument("--load-latest", action="store_true",
                         help="Load the latest checkpoint")
-    parser.add_argument("--num-features", type=int, default=3,
+    parser.add_argument("--num-features", type=int, default=4,
                         help="Number of feature dimensions")
     parser.add_argument("--num-classes", type=int, default=144,
                         help="Number of classes")
@@ -168,6 +170,9 @@ def main():
     if args.angle_and_distance == True:
         print("Angle and Distance")
         list_transforms.append(AngleDistanceAttribute(True))
+    if args.line_graph == True:
+        print("Line_graph")
+        list_transforms.append(tgt.LineGraph())
     transforms = tgt.Compose(list_transforms)
 
     if args.in_memory_dataset:
@@ -201,7 +206,7 @@ def main():
     else:
         model = GNN(args).to(args.device)
     model_save_path = f'{args.model}-latest.pth'
-
+    
     if args.load_latest:
         model.load_state_dict(torch.load(model_save_path))
         val_acc, val_loss = test(model, val_off_loader, args)
