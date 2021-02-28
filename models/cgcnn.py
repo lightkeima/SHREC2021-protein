@@ -17,8 +17,8 @@ class CGCNN(torch.nn.Module):
     self.conv1 = CGConv(3,dim=4)
     self.conv2 = CGConv(3,dim=4)
     self.conv3 = CGConv(3,dim=4)
-    self.lin = Linear(9,64)
-    self.classifier = Linear(64 + 9, args.num_classes)
+    self.lin = Linear(6*3,64)
+    self.classifier = Linear(64 + 6*3, args.num_classes)
      
   def forward(self, data):
     x, edge_index, edge_attr, batch = data.x, data.edge_index, data.edge_attr, data.batch
