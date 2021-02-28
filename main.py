@@ -169,6 +169,7 @@ def main():
         list_transforms.append(tgt.SamplePoints(num=args.num_sample_points))
     if args.angle_and_distance == True:
         print("Angle and Distance")
+        list_transforms.append(tgt.TwoHop())
         list_transforms.append(AngleDistanceAttribute(True))
     if args.line_graph == True:
         print("Line_graph")
